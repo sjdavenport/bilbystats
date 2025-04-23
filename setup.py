@@ -17,7 +17,7 @@ setup(
         'scipy',
         'transformers'
     ],
-    version='0.0.3',
+    version='0.0.0',
     license='MIT',
     author='Samuel DAVENPORT',
     download_url='https://github.com/sjdavenport/bilbystats/',
