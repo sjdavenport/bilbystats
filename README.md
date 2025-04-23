@@ -1,2 +1,2 @@
 # BilbyStats 
-## A collection of functions for use in the statistical and machine learning pipeline at Bilby
+## A collection of  statistical and machine learning functions for use in the Bilby pipeline
