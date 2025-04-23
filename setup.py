@@ -20,7 +20,7 @@ setup(
     version='0.0.3',
     license='MIT',
     author='Samuel DAVENPORT',
-    download_url='https://github.com/sjdavenport/bilbystats//',
+    download_url='https://github.com/sjdavenport/bilbystats/',
     author_email='samuel.davenport@math.univ-toulouse.fr',
     url='https://github.com/sjdavenport/bilbystats/',
     long_description=long_description,
