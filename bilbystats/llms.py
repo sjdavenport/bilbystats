@@ -4,6 +4,7 @@
 import torch
 from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
 import os
+import bilbystats as bs
 
 
 def trainTFmodel(train_data, valid_data, model_name, savename=None, savedir="./", num_labels=2, label2id=None, training_args=None):
@@ -58,7 +59,7 @@ def trainTFmodel(train_data, valid_data, model_name, savename=None, savedir="./"
         args=training_args,
         train_dataset=train_data,
         eval_dataset=valid_data,
-        compute_metrics=compute_metrics,
+        compute_metrics=bs.compute_metrics,
     )
 
     # Train the model
