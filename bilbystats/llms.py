@@ -99,9 +99,9 @@ def tokenize_data(train_data, valid_data, test_data, model_name):
         return tokenizer(batch["text"], padding="max_length", truncation=True, max_length=max_length)
 
     # Tokenize all datasets
-    train_data_tk = train_data.map(tk_fun, batched=True)
-    valid_data_tk = valid_data.map(tk_fun, batched=True)
-    test_data_tk = test_data.map(tk_fun, batched=True)
+    train_data_tk = train_data.map(tokenize_function, batched=True)
+    valid_data_tk = valid_data.map(tokenize_function, batched=True)
+    test_data_tk = test_data.map(tokenize_function, batched=True)
 
     # Convert datasets to PyTorch tensors
     train_data_tk.set_format(
