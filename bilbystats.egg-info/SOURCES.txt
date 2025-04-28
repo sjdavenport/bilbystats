@@ -1,0 +1,12 @@
+LICENSE.txt
+README.md
+pyproject.toml
+setup.py
+bilbystats/__init__.py
+bilbystats/llms.py
+bilbystats/mlmodels.py
+bilbystats.egg-info/PKG-INFO
+bilbystats.egg-info/SOURCES.txt
+bilbystats.egg-info/dependency_links.txt
+bilbystats.egg-info/requires.txt
+bilbystats.egg-info/top_level.txt
