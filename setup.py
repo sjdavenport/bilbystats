@@ -15,7 +15,8 @@ setup(
         'matplotlib',
         'scikit-learn',
         'scipy',
-        'transformers'
+        'transformers',
+        'datasets'
     ],
     version='0.0.0',
     license='MIT',
