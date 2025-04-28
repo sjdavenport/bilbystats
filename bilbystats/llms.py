@@ -9,7 +9,7 @@ def train_tf():
     return 5
 
 
-def load_tf_model(model_name="distilbert-base-uncased", num_labels):
+def load_tf_model(model_name="distilbert-base-uncased", num_labels=2):
     """
     Loads a pre-trained Hugging Face transformer model and its tokenizer for sequence classification.
 
