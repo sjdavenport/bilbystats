@@ -6,6 +6,7 @@ from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassifica
 
 
 def train_tf():
+    return 5
 
 
 def load_tf_model(model_name="distilbert-base-uncased", num_labels):
