@@ -3,51 +3,81 @@
 """
 import torch
 from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
+import os
 
 
-def train_tf():
-    return 5
-
-
-def load_tf_model(model_name="distilbert-base-uncased", num_labels=2):
+def trainTFmodel(train_data, valid_data, model_name, savename=None, savedir="./", num_labels=2, training_args=None):
     """
-    Loads a pre-trained Hugging Face transformer model and its tokenizer for sequence classification.
+    Trains a sequence classification model using the Hugging Face Trainer API.
 
-    Parameters:
-    -----------
-    model_name (str, optional): The name or path of the pre-trained model to load. 
-        Defaults to "distilbert-base-uncased".
-    num_labels (int): The number of labels for the classification task.
+    This function initializes a model for sequence classification, prepares the training setup,
+    and starts the training process. It allows for the use of custom or default training arguments
+    and automatically disables WandB logging.
+
+    Args:
+        train_data (Dataset): The training dataset, already tokenized and padded.
+        val_data (Dataset): The validation dataset, already tokenized and padded.
+        model_name (str): The name or path of the pre-trained model to be used (e.g., "bert-base-uncased").
+        savedir (str): Directory where the trained model and checkpoints will be saved.
+        num_labels (int, optional): The number of labels for the classification task (default is 2 for binary classification).
+        training_args (TrainingArguments, optional): Custom training arguments. If None, default training arguments are used.
 
     Returns:
-    -----------
-    tuple: A tuple (tokenizer, model) where:
-        - tokenizer (PreTrainedTokenizer): The tokenizer corresponding to the pre-trained model.
-        - model (PreTrainedModel): The model configured for sequence classification with the specified number of labels.
-"""
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+        Trainer: The Hugging Face Trainer object, which contains the trained model and additional training details.
+        model: The trained model after the training process.
+        training_args: The training arguments used for the training process.
+    """
     model = AutoModelForSequenceClassification.from_pretrained(
         model_name, num_labels=num_labels)
 
-    return tokenizer, model
+    if not training_args:
+        training_args = default_training_args(model_name, savename, savedir)
+    else:
+        training_args = training_args
+
+    # Turn WandB logging off
+    os.environ["WANDB_DISABLED"] = "true"
+    os.environ["WANDB_MODE"] = "offline"
+
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_data,
+        eval_dataset=valid_data,
+        compute_metrics=compute_metrics,
+    )
+
+    trainer.train()
+
+    return trainer, model, training_args
 
 
-def tokenize_function(batch, max_length=512):
-    """
-    Tokenizes a batch of text examples using a pre-defined tokenizer.
+def default_training_args(model_name, savename=None, savedir='./'):
+    if not savename:
+        savename = model_name
 
-    Args:
-    batch (dict): A dictionary containing a "text" key with a list of text strings to tokenize.
-    max_length (int, optional): The maximum sequence length after tokenization. 
-            Sequences longer than this will be truncated, and shorter ones will be padded. Defaults to 512.
+    training_args = TrainingArguments(
+        output_dir=savedir + savename,
+        run_name=f"{model_name}",
+        learning_rate=2e-5,
+        do_eval=True,
+        eval_strategy="epoch",
+        save_strategy="epoch",
+        save_total_limit=1,
+        auto_find_batch_size=True,
+        num_train_epochs=4,
+        weight_decay=0.01,
+        logging_steps=300,  # how often to log to W&B
+        load_best_model_at_end=True,
+        # save_total_limit=1,
+        seed=42,
+        data_seed=42,
+        save_safetensors=False,
+    )
+    return training_args
 
-    Returns:
-    dict: A dictionary of tokenized outputs suitable for model input (e.g., input_ids, attention_mask).
-"""
-    return tokenizer(batch["text"], padding="max_length", truncation=True, max_length=max_length)
 
-
-def tokenize_data(train_data, valid_data, test_data):
+def tokenize_data(train_data, valid_data, test_data, model_name):
     """
     Tokenizes and formats training, validation, and test datasets for PyTorch models.
 
@@ -63,10 +93,15 @@ def tokenize_data(train_data, valid_data, test_data):
     tuple: A tuple (train_data_tk, valid_data_tk, test_data_tk) where each element is:
         - A tokenized and PyTorch-formatted dataset with columns "input_ids", "attention_mask", and "label".
 """
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+    def tokenize_function(batch, max_length=512, tokenizer):
+        return tokenizer(batch["text"], padding="max_length", truncation=True, max_length=max_length)
+
     # Tokenize all datasets
-    train_data_tk = train_data.map(tokenize_function, batched=True)
-    valid_data_tk = valid_data.map(tokenize_function, batched=True)
-    test_data_tk = test_data.map(tokenize_function, batched=True)
+    train_data_tk = train_data.map(tk_fun, batched=True)
+    valid_data_tk = valid_data.map(tk_fun, batched=True)
+    test_data_tk = test_data.map(tk_fun, batched=True)
 
     # Convert datasets to PyTorch tensors
     train_data_tk.set_format(

@@ -16,7 +16,8 @@ setup(
         'scikit-learn',
         'scipy',
         'transformers',
-        'datasets'
+        'datasets',
+        'evaluate'
     ],
     version='0.0.0',
     license='MIT',
