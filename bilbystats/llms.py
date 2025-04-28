@@ -69,6 +69,22 @@ def trainTFmodel(train_data, valid_data, model_name, savename=None, savedir="./"
 
 
 def default_training_args(model_name, savename=None, savedir='./'):
+    """
+    Generates default training arguments for fine-tuning a model using Hugging Face's `TrainingArguments`.
+
+    Parameters:
+        - model_name (str): The name or path of the pre-trained model to be fine-tuned.
+        - savename (str, optional): The name for saving the model. If not provided, the `model_name` will be used.
+        - savedir (str, optional): The directory where the trained model will be saved. Default is './'.
+
+    Returns:
+        - training_args (TrainingArguments): A `TrainingArguments` object with default configuration for model training.
+
+    This function sets various training hyperparameters such as the learning rate, the number of epochs,
+    evaluation strategy, and logging steps. The arguments are set for training the model for 4 epochs with 
+    weight decay and automatic batch size determination, saving the best model at the end of training, 
+    and logging to W&B every 300 steps.
+"""
     if not savename:
         savename = model_name
 
