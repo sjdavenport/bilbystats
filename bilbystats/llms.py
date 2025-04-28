@@ -5,9 +5,6 @@ import torch
 from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
 import os
 
-label2id = {"NEGATIVE": 0, "POSITIVE": 1, "NEUTRAL": 2}
-id2label = {v: k for k, v in label2id.items()}
-
 
 def trainTFmodel(train_data, valid_data, model_name, savename=None, savedir="./", num_labels=2, label2id=None, training_args=None):
     """
@@ -29,6 +26,9 @@ def trainTFmodel(train_data, valid_data, model_name, savename=None, savedir="./"
         - training_args (TrainingArguments): The training arguments used for the training process.
 """
     if not label2id:
+        model = AutoModelForSequenceClassification.from_pretrained(
+            model_name, num_labels=num_labels)
+    else:
         if len(label2id) != num_labels:
             raise ValueError(
                 "The number of label ids does not match the number of labels")
@@ -41,9 +41,6 @@ def trainTFmodel(train_data, valid_data, model_name, savename=None, savedir="./"
             num_labels=num_labels,
             id2label=id2label,
             label2id=label2id)
-    else:
-        model = AutoModelForSequenceClassification.from_pretrained(
-            model_name, num_labels=num_labels)
 
     # Obtain the training arguments
     if not training_args:
