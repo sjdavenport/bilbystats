@@ -5,31 +5,47 @@ import torch
 from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
 import os
 
+label2id = {"NEGATIVE": 0, "POSITIVE": 1, "NEUTRAL": 2}
+id2label = {v: k for k, v in label2id.items()}
 
-def trainTFmodel(train_data, valid_data, model_name, savename=None, savedir="./", num_labels=2, training_args=None):
+
+def trainTFmodel(train_data, valid_data, model_name, savename=None, savedir="./", num_labels=2, label2id=None, training_args=None):
     """
-    Trains a sequence classification model using the Hugging Face Trainer API.
+    Trains a sequence classification model using the Hugging Face Transformers library.
 
-    This function initializes a model for sequence classification, prepares the training setup,
-    and starts the training process. It allows for the use of custom or default training arguments
-    and automatically disables WandB logging.
-
-    Args:
-        train_data (Dataset): The training dataset, already tokenized and padded.
-        val_data (Dataset): The validation dataset, already tokenized and padded.
-        model_name (str): The name or path of the pre-trained model to be used (e.g., "bert-base-uncased").
-        savedir (str): Directory where the trained model and checkpoints will be saved.
-        num_labels (int, optional): The number of labels for the classification task (default is 2 for binary classification).
-        training_args (TrainingArguments, optional): Custom training arguments. If None, default training arguments are used.
+    Parameters:
+        - train_data (Dataset): The training dataset in Hugging Face format (e.g., `datasets.Dataset`).
+        - valid_data (Dataset): The validation dataset in Hugging Face format (e.g., `datasets.Dataset`).
+        - model_name (str): The name or path to a pre-trained model from Hugging Face.
+        - savename (str, optional): The name to save the trained model as (default is None).
+        - savedir (str, optional): Directory where the trained model will be saved (default is './').
+        - num_labels (int, optional): The number of labels in the classification task (default is 2).
+        - label2id (dict, optional): A dictionary mapping label names to label IDs. If None, labels are automatically handled (default is None).
+        - training_args (TrainingArguments, optional): The training arguments (default is None, in which case defaults are used).
 
     Returns:
-        Trainer: The Hugging Face Trainer object, which contains the trained model and additional training details.
-        model: The trained model after the training process.
-        training_args: The training arguments used for the training process.
-    """
-    model = AutoModelForSequenceClassification.from_pretrained(
-        model_name, num_labels=num_labels)
+        - trainer (Trainer): The trained `Trainer` object.
+        - model (PreTrainedModel): The trained model.
+        - training_args (TrainingArguments): The training arguments used for the training process.
+"""
+    if not label2id:
+        if len(label2id) != num_labels:
+            raise ValueError(
+                "The number of label ids does not match the number of labels")
 
+        id2label = {v: k for k, v in label2id.items()}
+
+        # Load the model
+        model = AutoModelForSequenceClassification.from_pretrained(
+            model_name,
+            num_labels=num_labels,
+            id2label=id2label,
+            label2id=label2id)
+    else:
+        model = AutoModelForSequenceClassification.from_pretrained(
+            model_name, num_labels=num_labels)
+
+    # Obtain the training arguments
     if not training_args:
         training_args = default_training_args(model_name, savename, savedir)
     else:
@@ -39,6 +55,7 @@ def trainTFmodel(train_data, valid_data, model_name, savename=None, savedir="./"
     os.environ["WANDB_DISABLED"] = "true"
     os.environ["WANDB_MODE"] = "offline"
 
+    # Initialize the trainer
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -47,6 +64,7 @@ def trainTFmodel(train_data, valid_data, model_name, savename=None, savedir="./"
         compute_metrics=compute_metrics,
     )
 
+    # Train the model
     trainer.train()
 
     return trainer, model, training_args
