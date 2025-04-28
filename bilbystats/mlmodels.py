@@ -2,6 +2,7 @@
     ML models for classification
 """
 from sklearn.model_selection import train_test_split
+from datasets import Dataset
 
 
 def data_idx_split(idx, ratio=0.2, valratio=0.5, random_state=42):
@@ -35,6 +36,50 @@ def data_idx_split(idx, ratio=0.2, valratio=0.5, random_state=42):
     )
 
     return train_indices, valid_indices, test_indices
+
+
+def train_val_test_split(df, covariate, target, ratio=0.2, valratio=0.5, random_state=42):
+    """
+    Splits a DataFrame into training, validation, and test sets and formats them as Hugging Face Datasets.
+
+    Parameters:
+    -----------
+    df (pd.DataFrame): Input DataFrame containing the data.
+    covariate (str): Name of the column to be used as the input text.
+    target (str): Name of the column to be used as the label.
+    ratio (float, optional): Proportion of the data to reserve for validation and test sets combined. Default is 0.2.
+    valratio (float, optional): Proportion of the reserved data (from `ratio`) to assign to the validation set.
+                                The remainder is assigned to the test set. Default is 0.5.
+    random_state (int, optional): Random seed for reproducibility. Default is 42.
+
+    Returns:
+    --------
+    tuple: A tuple containing three Hugging Face `Dataset` objects:
+        - train_data (Dataset): Training set.
+        - valid_data (Dataset): Validation set.
+        - test_data (Dataset): Test set.
+"""
+    # Split the indices of df into train, validation and test sets
+    train_indices, valid_indices, test_indices = data_idx_split(df.index, ratio=ratio, valratio=valratio, random_state=random_state):
+
+        # Get the corresponding data from the indices
+    train_texts = df.loc[train_indices, covariate].tolist()
+    train_labels = df.loc[train_indices, target].tolist()
+
+    valid_texts = df.loc[valid_indices, covariate].tolist()
+    valid_labels = df.loc[valid_indices, target].tolist()
+
+    test_texts = df.loc[test_indices, covariate].tolist()
+    test_labels = df.loc[test_indices, target].tolist()
+
+    # Convert into Hugging Face dataset format
+    train_data = Dataset.from_dict(
+        {'text': train_texts, 'label': train_labels})
+    valid_data = Dataset.from_dict(
+        {'text': valid_texts, 'label': valid_labels})
+    test_data = Dataset.from_dict({'text': test_texts, 'label': test_labels})
+
+    return train_data, valid_data, test_data
 
 
 def logreg_fit(X, y, train_idx):
@@ -106,3 +151,21 @@ def logreg_metrics(X, y, model, test_indices, doprint=0):
         print(classification_report(y_test, y_pred))
 
     return accuracy
+
+
+def compute_metrics(eval_pred):
+    predictions, labels = eval_pred
+    predictions = np.argmax(predictions, axis=1)
+    precision = precision_metric.compute(
+        predictions=predictions, references=labels, average="macro"
+    )["precision"]
+    recall = recall_metric.compute(
+        predictions=predictions, references=labels, average="macro"
+    )["recall"]
+    f1 = f1_metric.compute(predictions=predictions, references=labels, average="macro")[
+        "f1"
+    ]
+    accuracy = accuracy_metric.compute(predictions=predictions, references=labels)[
+        "accuracy"
+    ]
+    return {"accuracy": accuracy, "precision": precision, "recall": recall, "f1": f1}
