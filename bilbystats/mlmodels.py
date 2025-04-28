@@ -4,6 +4,7 @@
 from sklearn.model_selection import train_test_split
 from datasets import Dataset
 import evaluate
+import numpy as np
 
 
 def data_idx_split(idx, ratio=0.2, valratio=0.5, random_state=42):
