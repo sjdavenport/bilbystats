@@ -43,15 +43,15 @@ def trainTFmodel(train_data, valid_data, model_name, savename=None, savedir="./"
             id2label=id2label,
             label2id=label2id)
 
+    # Turn WandB logging off
+    os.environ["WANDB_DISABLED"] = "true"
+    os.environ["WANDB_MODE"] = "offline"
+
     # Obtain the training arguments
     if not training_args:
         training_args = default_training_args(model_name, savename, savedir)
     else:
         training_args = training_args
-
-    # Turn WandB logging off
-    os.environ["WANDB_DISABLED"] = "true"
-    os.environ["WANDB_MODE"] = "offline"
 
     # Initialize the trainer
     trainer = Trainer(
