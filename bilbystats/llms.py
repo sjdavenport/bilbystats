@@ -95,7 +95,7 @@ def tokenize_data(train_data, valid_data, test_data, model_name):
 """
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-    def tokenize_function(batch, max_length=512, tokenizer):
+    def tokenize_function(batch, tokenizer, max_length=512):
         return tokenizer(batch["text"], padding="max_length", truncation=True, max_length=max_length)
 
     # Tokenize all datasets
