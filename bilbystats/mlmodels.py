@@ -40,7 +40,7 @@ def data_idx_split(idx, ratio=0.2, valratio=0.5, random_state=42):
     return train_indices, valid_indices, test_indices
 
 
-def train_val_test_split(df, covariate, target, ratio=0.2, valratio=0.5, random_state=42):
+def train_val_test_split(df, covariate, target, ratio=0.3, valratio=0.5, random_state=42):
     """
     Splits a DataFrame into training, validation, and test sets and formats them as Hugging Face Datasets.
 
