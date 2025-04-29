@@ -9,5 +9,10 @@ and then to install the package navigate to the bilbystats directory and run
 ```bash
 pip install . 
 ```
+Then the package can be imported from within python via e.g. 
+
+```bash
+import bilbystats as bs
+```
 
 
