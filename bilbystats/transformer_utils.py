@@ -109,7 +109,7 @@ def default_training_args(model_name, savename=None, savedir='./'):
     return training_args
 
 
-def tokenize_data(train_data, valid_data, test_data, model_name):
+def tokenize_data(train_data, valid_data, test_data, model_name, chunk_size=512, stride=128):
     """
     Tokenizes and formats training, validation, and test datasets for PyTorch models.
 
@@ -127,67 +127,42 @@ def tokenize_data(train_data, valid_data, test_data, model_name):
 """
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-    def tokenize_function(batch, max_length=512):
-        return tokenizer(batch["text"], padding="max_length", truncation=True, max_length=max_length)
+    def tokenize(batch):
+        return chunked_tokenize_function(batch, tokenizer, chunk_size, stride)
 
-    # Tokenize all datasets
-    train_data_tk = train_data.map(tokenize_function, batched=True)
-    valid_data_tk = valid_data.map(tokenize_function, batched=True)
-    test_data_tk = test_data.map(tokenize_function, batched=True)
+    # Tokenize and chunk datasets
+    train_data_tk = train_data.map(
+        tokenize, batched=True, remove_columns=train_data.column_names)
+    valid_data_tk = valid_data.map(
+        tokenize, batched=True, remove_columns=valid_data.column_names)
+    test_data_tk = test_data.map(
+        tokenize, batched=True, remove_columns=test_data.column_names)
 
-    # Convert datasets to PyTorch tensors
-    train_data_tk.set_format(
-        "torch", columns=["input_ids", "attention_mask", "label"])
-    valid_data_tk.set_format(
-        "torch", columns=["input_ids", "attention_mask", "label"])
-    test_data_tk.set_format(
-        "torch", columns=["input_ids", "attention_mask", "label"])
+    # Set torch format
+    for ds in [train_data_tk, valid_data_tk, test_data_tk]:
+        ds.set_format("torch", columns=[
+                      "input_ids", "attention_mask", "label"])
 
     return train_data_tk, valid_data_tk, test_data_tk
 
 
-def get_sentiment_score(text):
-    """
-    Analyze the sentiment of a given text using FinBERT for financial sentiment analysis.
-
-    This function uses the pre-trained FinBERT model to evaluate the sentiment of the input 
-    text. The sentiment is returned as a continuous score, with the following transformations:
-    - Negative sentiment: returns a negative score (negative of the model's score).
-    - Neutral sentiment: returns a score shifted by 10.
-    - Positive sentiment: returns the raw model score.
-
-    The function automatically detects whether a GPU is available and uses it for faster processing 
-    if possible.
-
-    Parameters:
-    -----------
-    text : str
-        The text for which the sentiment score is to be calculated.
-
-    Returns:
-    --------
-    out : float
-        A continuous sentiment score representing the text's sentiment. The score is modified as:
-        - Negative sentiment: negative of the raw score.
-        - Neutral sentiment: score shifted by +10.
-        - Positive sentiment: raw score.
-    """
-    # Check if a GPU is available, otherwise default to CPU
-    device = 0 if torch.cuda.is_available() else -1
-
-    # Load FinBERT for financial sentiment analysis, using GPU if available
-    sentiment_analyzer = pipeline(
-        'sentiment-analysis',
-        model='yiyanghkust/finbert-tone',
-        device=device
+def chunked_tokenize_function(example, tokenizer, chunk_size=512, stride=128):
+    tokenized = tokenizer(
+        example["text"],
+        padding="max_length",
+        truncation=True,
+        max_length=chunk_size,
+        stride=stride,
+        return_overflowing_tokens=True,
+        return_offsets_mapping=True
     )
 
-    result = sentiment_analyzer(text)
-    # Return the continuous sentiment score
-    if result[0]['label'] == 'Negative':
-        out = -result[0]['score']
-    elif result[0]['label'] == 'Neutral':
-        out = result[0]['score'] + 10
-    else:
-        out = result[0]['score']
-    return out
+    # We need to align the label with the right chunks
+    sample_mapping = tokenized.pop("overflow_to_sample_mapping")
+    labels = []
+    for i in sample_mapping:
+        # same label for all chunks from a single input
+        labels.append(example["label"])
+
+    tokenized["label"] = labels
+    return tokenized
