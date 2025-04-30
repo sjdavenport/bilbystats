@@ -3,6 +3,8 @@
 """
 from sklearn.model_selection import train_test_split
 from datasets import Dataset
+import evaluate
+import numpy as np
 
 
 def data_idx_split(idx, ratio=0.2, valratio=0.5, random_state=42):
@@ -38,7 +40,7 @@ def data_idx_split(idx, ratio=0.2, valratio=0.5, random_state=42):
     return train_indices, valid_indices, test_indices
 
 
-def train_val_test_split(df, covariate, target, ratio=0.2, valratio=0.5, random_state=42):
+def train_val_test_split(df, covariate, target, ratio=0.3, valratio=0.5, random_state=42):
     """
     Splits a DataFrame into training, validation, and test sets and formats them as Hugging Face Datasets.
 
@@ -155,6 +157,11 @@ def logreg_metrics(X, y, model, test_indices, doprint=0):
 
 
 def compute_metrics(eval_pred):
+    accuracy_metric = evaluate.load("accuracy")
+    precision_metric = evaluate.load("precision")
+    recall_metric = evaluate.load("recall")
+    f1_metric = evaluate.load("f1")
+
     predictions, labels = eval_pred
     predictions = np.argmax(predictions, axis=1)
     precision = precision_metric.compute(

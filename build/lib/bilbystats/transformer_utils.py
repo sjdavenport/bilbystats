@@ -3,7 +3,6 @@
 """
 import torch
 from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
-from tqdm import tqdm
 import os
 import bilbystats as bs
 
@@ -69,34 +68,6 @@ def trainTFmodel(train_data, valid_data, model_name, savename=None, savedir="./"
     return trainer, model, training_args
 
 
-def evalTFmodel(texts, model_dir, batch_size=32):
-    model = AutoModelForSequenceClassification.from_pretrained(
-        model_dir, local_files_only=True)
-    model.eval()
-
-    if isinstance(my_var, list):
-        texts2use = texts2use.tolist()
-    else:
-        texts2use = texts
-
-    probabilities = []
-    predictions = []
-
-    for i in tqdm(range(0, len(texts), batch_size), desc="Processing Batches"):
-        batch_texts = texts[i:i+batch_size]
-        batch_inputs = tokenizer(batch_texts, padding=True,
-                                 truncation=True, max_length=512, return_tensors="pt")
-
-        with torch.no_grad():
-            logits = model(**batch_inputs).logits
-            probs = torch.nn.functional.softmax(logits, dim=-1)
-            preds = torch.argmax(probs, dim=-1)
-            probabilities.append(probs.numpy())
-            predictions.append(preds.tolist())  # <- extend, not append
-
-    return predictions, probabilities
-
-
 def default_training_args(model_name, savename=None, savedir='./'):
     """
     Generates default training arguments for fine-tuning a model using Hugging Face's `TrainingArguments`.
@@ -136,11 +107,6 @@ def default_training_args(model_name, savename=None, savedir='./'):
         save_safetensors=False,
     )
     return training_args
-
-
-def load_tokenizer(model_name):
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    return tokenizer
 
 
 def tokenize_data(train_data, valid_data, test_data, model_name):

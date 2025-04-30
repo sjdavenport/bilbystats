@@ -1,10 +1,11 @@
-LICENSE.txt
+LICENSE
 README.md
 pyproject.toml
 setup.py
 bilbystats/__init__.py
-bilbystats/llms.py
 bilbystats/mlmodels.py
+bilbystats/sentiment.py
+bilbystats/transformer_utils.py
 bilbystats.egg-info/PKG-INFO
 bilbystats.egg-info/SOURCES.txt
 bilbystats.egg-info/dependency_links.txt
