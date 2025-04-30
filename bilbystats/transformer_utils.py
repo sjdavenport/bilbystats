@@ -109,7 +109,7 @@ def default_training_args(model_name, savename=None, savedir='./'):
     return training_args
 
 
-def tokenize_data(train_data, valid_data, test_data, model_name, chunk_size=512, stride=128):
+def tokenize_data_chunks(train_data, valid_data, test_data, model_name, chunk_size=512, stride=128):
     """
     Tokenizes and formats training, validation, and test datasets for PyTorch models.
 
@@ -159,10 +159,7 @@ def chunked_tokenize_function(example, tokenizer, chunk_size=512, stride=128):
 
     # We need to align the label with the right chunks
     sample_mapping = tokenized.pop("overflow_to_sample_mapping")
-    labels = []
-    for i in sample_mapping:
-        # same label for all chunks from a single input
-        labels.append(example["label"])
+    labels = [example["label"][i] for i in sample_mapping]
 
     tokenized["label"] = labels
     return tokenized
