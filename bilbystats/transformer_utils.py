@@ -109,6 +109,43 @@ def default_training_args(model_name, savename=None, savedir='./'):
     return training_args
 
 
+def tokenize_data(train_data, valid_data, test_data, model_name):
+    """
+    Tokenizes and formats training, validation, and test datasets for PyTorch models.
+
+    Each dataset is tokenized using a predefined `tokenize_function`, and the outputs are
+    converted to PyTorch tensors with the relevant input columns.
+
+    Args:
+    train_data (Dataset): The training dataset containing text and labels.
+    valid_data (Dataset): The validation dataset containing text and labels.
+    test_data (Dataset): The test dataset containing text and labels.
+
+    Returns:
+    tuple: A tuple (train_data_tk, valid_data_tk, test_data_tk) where each element is:
+        - A tokenized and PyTorch-formatted dataset with columns "input_ids", "attention_mask", and "label".
+"""
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+    def tokenize_function(batch, max_length=512):
+        return tokenizer(batch["text"], padding="max_length", truncation=True, max_length=max_length)
+
+    # Tokenize all datasets
+    train_data_tk = train_data.map(tokenize_function, batched=True)
+    valid_data_tk = valid_data.map(tokenize_function, batched=True)
+    test_data_tk = test_data.map(tokenize_function, batched=True)
+
+    # Convert datasets to PyTorch tensors
+    train_data_tk.set_format(
+        "torch", columns=["input_ids", "attention_mask", "label"])
+    valid_data_tk.set_format(
+        "torch", columns=["input_ids", "attention_mask", "label"])
+    test_data_tk.set_format(
+        "torch", columns=["input_ids", "attention_mask", "label"])
+
+    return train_data_tk, valid_data_tk, test_data_tk
+
+
 def tokenize_data_chunks(train_data, valid_data, test_data, model_name, chunk_size=512, stride=128):
     """
     Tokenizes and formats training, validation, and test datasets for PyTorch models.
