@@ -19,7 +19,7 @@ setup(
         'datasets',
         'evaluate'
     ],
-    version='0.0.1',
+    version='0.0.2',
     license='MIT',
     author='Samuel DAVENPORT',
     download_url='https://github.com/sjdavenport/bilbystats/',
