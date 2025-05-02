@@ -1,7 +1,0 @@
-numpy
-matplotlib
-scikit-learn
-scipy
-transformers
-datasets
-evaluate
