@@ -70,6 +70,23 @@ def trainTFmodel(train_data, valid_data, model_name, savename=None, savedir="./"
 
 
 def evalTFmodel(texts, model_dir, batch_size=32):
+    """
+    Evaluates a text classification model on a list of input texts.
+
+    Loads a pre-trained HuggingFace `AutoModelForSequenceClassification` model from a local directory
+    and applies it to the given list of input texts in batches. The function returns predicted class 
+    labels and their associated probabilities.
+
+    Parameters:
+        texts (list of str or numpy array): List or array of text inputs to be classified.
+        model_dir (str): Path to the directory containing the locally saved pre-trained model.
+        batch_size (int, optional): Number of samples to process per batch. Defaults to 32.
+
+    Returns:
+        predictions (list of lists of int): List containing predicted class indices for each input.
+        probabilities (list of numpy arrays): List containing probability distributions over classes 
+                                          for each input.
+    """
     model = AutoModelForSequenceClassification.from_pretrained(
         model_dir, local_files_only=True)
     model.eval()
@@ -139,6 +156,17 @@ def default_training_args(model_name, savename=None, savedir='./'):
 
 
 def load_tokenizer(model_name):
+    """
+    Loads a tokenizer from a pretrained model.
+
+    Parameters:
+    model_name (str): The name or path of the pretrained model from which to load the tokenizer.
+                      This can be a model identifier from the Hugging Face Model Hub
+                      (e.g., 'bert-base-uncased') or a local path.
+
+    Returns:
+    transformers.PreTrainedTokenizer: An instance of the tokenizer associated with the specified model.
+    """
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     return tokenizer
 
@@ -218,6 +246,23 @@ def tokenize_data_chunks(train_data, valid_data, test_data, model_name, chunk_si
 
 
 def chunked_tokenize_function(example, tokenizer, chunk_size=512, stride=128):
+    """
+    Tokenizes input text into overlapping chunks, aligning labels with the resulting tokenized segments.
+
+    Parameters:
+        example (dict): A dictionary containing at least two keys:
+                        - "text" (str): The input text to be tokenized.
+                        - "label" (list): A list of labels corresponding to the text samples.
+        tokenizer (transformers.PreTrainedTokenizer): The tokenizer to use for tokenizing the text.
+        chunk_size (int, optional): The maximum length of each chunk (in tokens). Defaults to 512.
+        stride (int, optional): The number of tokens to overlap between consecutive chunks. Defaults to 128.
+
+    Returns:
+        dict: A dictionary of tokenized outputs, including input IDs, attention masks, offset mappings,
+              and the aligned "label" list for each chunk. The output will include all keys typically
+              returned by the tokenizer, with an added "label" key that maps the original labels to
+              the correct chunks.
+    """
     tokenized = tokenizer(
         example["text"],
         padding="max_length",
