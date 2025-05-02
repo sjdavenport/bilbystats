@@ -9,24 +9,40 @@ import numpy as np
 
 def data_idx_split(idx, ratio=0.2, valratio=0.5, random_state=42):
     """
-    Splits a given list of indices into training, validation, and test sets.
+    Splits a given list or array of indices into training, validation, and test sets.
 
-    The function first divides the indices into a training set and a temporary set (which will contain both validation and test data). Then, the temporary set is further split into validation and test sets.
+    This function first divides the input indices into a training set and a temporary set 
+    (which contains both validation and test data). It then further splits the temporary set 
+    into validation and test sets, ensuring reproducibility with the specified random state.
 
-    Parameters:
-    -----------
-    - idx (list or array-like): A list or array of indices to be split.
-    - ratio (float, optional): The proportion of the data to be used for the temporary set (valid + test). Default is 0.2 (20% of the data).
-    - valratio (float, optional): The proportion of the temporary set to be used for the validation set. Default is 0.5 (50% of the temporary set).
-    - random_state: a means of initializing randomness
+    Parameters
+    ----------
+    idx : list or array-like
+        A list or array of indices to split.
+        ratio : float, optional (default=0.2)
+        The proportion of the data to allocate to the combined validation + test set.
+        For example, ratio=0.2 means 20% of the data will be held out for validation and testing.
+    valratio : float, optional (default=0.5)
+        The proportion of the temporary set (validation + test) to allocate to the validation set.
+        For example, valratio=0.5 means the temporary set will be split 50/50 between validation and test.
+    random_state : int, RandomState instance or None, optional (default=42)
+        Controls the shuffling applied to the data before splitting.
+        Pass an int for reproducible output across multiple function calls.
 
-    Returns:
-    -----------
-    - tuple: A tuple containing three elements:
-      - train_indices: The indices for the training set.
-      - valid_indices: The indices for the validation set.
-      - test_indices: The indices for the test set.
-    """
+    Returns
+    -------
+    dict
+        A dictionary with three keys:
+            - 'train': array of indices for the training set.
+            - 'valid': array of indices for the validation set.
+            - 'test': array of indices for the test set.
+
+    Example
+    -------
+    idx = np.arange(100)
+    split = data_idx_split(idx, ratio=0.2, valratio=0.5, random_state=42)
+    print(split['train'].shape, split['valid'].shape, split['test'].shape)
+"""
     # Step 1: Split into train and temporary (valid+test)
     train_indices, temp_indices = train_test_split(
         idx, test_size=ratio, random_state=random_state
@@ -37,7 +53,13 @@ def data_idx_split(idx, ratio=0.2, valratio=0.5, random_state=42):
         temp_indices, test_size=valratio, random_state=random_state
     )
 
-    return train_indices, valid_indices, test_indices
+    indices = {
+        'train': train_indices,
+        'valid': valid_indices,
+        'test': test_indices
+    }
+
+    return indices
 
 
 def train_val_test_split(df, covariate, target, ratio=0.3, valratio=0.5, random_state=42):
