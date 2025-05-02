@@ -10,23 +10,46 @@ import bilbystats as bs
 
 def trainTFmodel(train_data, valid_data, model_name, savename=None, savedir="./", num_labels=2, label2id=None, training_args=None):
     """
-    Trains a sequence classification model using the Hugging Face Transformers library.
+    Train a Hugging Face Transformers model for sequence classification.
 
-    Parameters:
-        - train_data (Dataset): The training dataset in Hugging Face format (e.g., `datasets.Dataset`).
-        - valid_data (Dataset): The validation dataset in Hugging Face format (e.g., `datasets.Dataset`).
-        - model_name (str): The name or path to a pre-trained model from Hugging Face.
-        - savename (str, optional): The name to save the trained model as (default is None).
-        - savedir (str, optional): Directory where the trained model will be saved (default is './').
-        - num_labels (int, optional): The number of labels in the classification task (default is 2).
-        - label2id (dict, optional): A dictionary mapping label names to label IDs. If None, labels are automatically handled (default is None).
-        - training_args (TrainingArguments, optional): The training arguments (default is None, in which case defaults are used).
+    This function initializes and trains a sequence classification model using 
+    Hugging Face Transformers. It supports optional custom label mappings and 
+    training arguments. If no `training_args` are provided, default training 
+    arguments are generated.
 
-    Returns:
-        - trainer (Trainer): The trained `Trainer` object.
-        - model (PreTrainedModel): The trained model.
-        - training_args (TrainingArguments): The training arguments used for the training process.
-"""
+    ---------------------------------------------------------------------------
+    ARGUMENTS:
+    train_data : Dataset
+        The Hugging Face Dataset object containing training data.
+    valid_data : Dataset
+        The Hugging Face Dataset object containing validation data.
+    model_name : str
+        The name or path of the pretrained model to fine-tune.
+    savename : str, optional (default=None)
+        Optional name to use when saving the model.
+    savedir : str, optional (default="./")
+        Directory where the model and checkpoints will be saved.
+    num_labels : int, optional (default=2)
+        The number of output labels for classification.
+    label2id : dict, optional (default=None)
+        A dictionary mapping label names to integer IDs.
+    training_args : TrainingArguments, optional (default=None)
+        Hugging Face `TrainingArguments` object. If not provided, default 
+        arguments are generated.
+
+    ---------------------------------------------------------------------------
+    OUTPUT:
+    trainer : Trainer
+        The Hugging Face Trainer object used for training.
+    model : AutoModelForSequenceClassification
+        The trained sequence classification model.
+    training_args : TrainingArguments
+        The training arguments used during training.
+
+    ---------------------------------------------------------------------------
+    Copyright (C) - 2025 - Samuel Davenport
+    ---------------------------------------------------------------------------
+    """
     if not label2id:
         model = AutoModelForSequenceClassification.from_pretrained(
             model_name, num_labels=num_labels)
@@ -71,21 +94,32 @@ def trainTFmodel(train_data, valid_data, model_name, savename=None, savedir="./"
 
 def evalTFmodel(texts, model_dir, batch_size=32):
     """
-    Evaluates a text classification model on a list of input texts.
+    Evaluate a Hugging Face Transformers model on a list of texts.
 
-    Loads a pre-trained HuggingFace `AutoModelForSequenceClassification` model from a local directory
-    and applies it to the given list of input texts in batches. The function returns predicted class 
-    labels and their associated probabilities.
+    This function loads a pretrained sequence classification model from the 
+    specified directory and performs batch-wise evaluation on the provided 
+    texts. It returns the predicted labels and corresponding probability 
+    distributions.
 
-    Parameters:
-        texts (list of str or numpy array): List or array of text inputs to be classified.
-        model_dir (str): Path to the directory containing the locally saved pre-trained model.
-        batch_size (int, optional): Number of samples to process per batch. Defaults to 32.
+    ---------------------------------------------------------------------------
+    ARGUMENTS:
+    texts : list of str or array-like
+        The input texts to classify.
+    model_dir : str
+        Path to the directory containing the pretrained model.
+    batch_size : int, optional (default=32)
+        The batch size to use during evaluation.
 
-    Returns:
-        predictions (list of lists of int): List containing predicted class indices for each input.
-        probabilities (list of numpy arrays): List containing probability distributions over classes 
-                                          for each input.
+    ---------------------------------------------------------------------------
+    OUTPUT:
+    predictions : list
+        A list of predicted class labels for each input text.
+    probabilities : list
+        A list of probability distributions for each input text.
+
+    ---------------------------------------------------------------------------
+    Copyright (C) - 2025 - Samuel Davenport
+    ---------------------------------------------------------------------------
     """
     model = AutoModelForSequenceClassification.from_pretrained(
         model_dir, local_files_only=True)
@@ -116,21 +150,33 @@ def evalTFmodel(texts, model_dir, batch_size=32):
 
 def default_training_args(model_name, savename=None, savedir='./'):
     """
-    Generates default training arguments for fine-tuning a model using Hugging Face's `TrainingArguments`.
+    Create default Hugging Face TrainingArguments for model training.
 
-    Parameters:
-        - model_name (str): The name or path of the pre-trained model to be fine-tuned.
-        - savename (str, optional): The name for saving the model. If not provided, the `model_name` will be used.
-        - savedir (str, optional): The directory where the trained model will be saved. Default is './'.
+    This function generates a set of default training arguments suitable for 
+    fine-tuning a Hugging Face Transformers model. It configures basic 
+    parameters such as evaluation strategy, saving strategy, and logging, and 
+    allows specifying custom save names and directories.
 
-    Returns:
-        - training_args (TrainingArguments): A `TrainingArguments` object with default configuration for model training.
+    ---------------------------------------------------------------------------
+    ARGUMENTS:
+    model_name : str
+        The name of the model, used for logging and directory naming.
+    savename : str, optional (default=None)
+        The name to use when saving the model. Defaults to `model_name` if not 
+        provided.
+    savedir : str, optional (default='./')
+        Directory where model checkpoints and logs will be saved.
 
-    This function sets various training hyperparameters such as the learning rate, the number of epochs,
-    evaluation strategy, and logging steps. The arguments are set for training the model for 4 epochs with 
-    weight decay and automatic batch size determination, saving the best model at the end of training, 
-    and logging to W&B every 300 steps.
-"""
+    ---------------------------------------------------------------------------
+    OUTPUT:
+    training_args : TrainingArguments
+        A Hugging Face `TrainingArguments` object with default settings.
+
+    ---------------------------------------------------------------------------
+    Copyright (C) - 2025 - Samuel Davenport
+    ---------------------------------------------------------------------------
+    """
+
     if not savename:
         savename = model_name
 
@@ -157,15 +203,24 @@ def default_training_args(model_name, savename=None, savedir='./'):
 
 def load_tokenizer(model_name):
     """
-    Loads a tokenizer from a pretrained model.
+    Load a Hugging Face tokenizer.
 
-    Parameters:
-    model_name (str): The name or path of the pretrained model from which to load the tokenizer.
-                      This can be a model identifier from the Hugging Face Model Hub
-                      (e.g., 'bert-base-uncased') or a local path.
+    This function loads a pretrained tokenizer from Hugging Face Transformers 
+    based on the provided model name.
 
-    Returns:
-    transformers.PreTrainedTokenizer: An instance of the tokenizer associated with the specified model.
+    ---------------------------------------------------------------------------
+    ARGUMENTS:
+    model_name : str
+        The name or path of the pretrained model whose tokenizer will be loaded.
+
+    ---------------------------------------------------------------------------
+    OUTPUT:
+    tokenizer : AutoTokenizer
+        The loaded tokenizer object.
+
+    ---------------------------------------------------------------------------
+    Copyright (C) - 2025 - Samuel Davenport
+    ---------------------------------------------------------------------------
     """
     tokenizer = AutoTokenizer.from_pretrained(model_name)
     return tokenizer
@@ -173,20 +228,37 @@ def load_tokenizer(model_name):
 
 def tokenize_data(train_data, valid_data, test_data, model_name):
     """
-    Tokenizes and formats training, validation, and test datasets for PyTorch models.
+    Tokenize datasets for Hugging Face Transformers.
 
-    Each dataset is tokenized using a predefined `tokenize_function`, and the outputs are
-    converted to PyTorch tensors with the relevant input columns.
+    This function tokenizes the provided train, validation, and test datasets 
+    using a pretrained tokenizer. It applies padding and truncation to ensure 
+    inputs fit within the model's maximum sequence length, and formats the 
+    datasets for use with PyTorch.
 
-    Args:
-    train_data (Dataset): The training dataset containing text and labels.
-    valid_data (Dataset): The validation dataset containing text and labels.
-    test_data (Dataset): The test dataset containing text and labels.
+    ---------------------------------------------------------------------------
+    ARGUMENTS:
+    train_data : Dataset
+        The Hugging Face Dataset object containing training data.
+    valid_data : Dataset
+        The Hugging Face Dataset object containing validation data.
+    test_data : Dataset
+        The Hugging Face Dataset object containing test data.
+    model_name : str
+        The name or path of the pretrained model whose tokenizer will be used.
 
-    Returns:
-    tuple: A tuple (train_data_tk, valid_data_tk, test_data_tk) where each element is:
-        - A tokenized and PyTorch-formatted dataset with columns "input_ids", "attention_mask", and "label".
-"""
+    ---------------------------------------------------------------------------
+    OUTPUT:
+    train_data_tk : Dataset
+        Tokenized and formatted training dataset.
+    valid_data_tk : Dataset
+        Tokenized and formatted validation dataset.
+    test_data_tk : Dataset
+        Tokenized and formatted test dataset.
+
+    ---------------------------------------------------------------------------
+    Copyright (C) - 2025 - Samuel Davenport
+    ---------------------------------------------------------------------------
+    """
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def tokenize_function(batch, max_length=512):
@@ -210,20 +282,40 @@ def tokenize_data(train_data, valid_data, test_data, model_name):
 
 def tokenize_data_chunks(train_data, valid_data, test_data, model_name, chunk_size=512, stride=128):
     """
-    Tokenizes and formats training, validation, and test datasets for PyTorch models.
+    Tokenize and chunk datasets for Hugging Face Transformers.
 
-    Each dataset is tokenized using a predefined `tokenize_function`, and the outputs are
-    converted to PyTorch tensors with the relevant input columns.
+    This function tokenizes and chunks the provided datasets using a pretrained 
+    tokenizer. The data is split into overlapping chunks based on the specified 
+    chunk size and stride, which is useful for handling long documents.
 
-    Args:
-    train_data (Dataset): The training dataset containing text and labels.
-    valid_data (Dataset): The validation dataset containing text and labels.
-    test_data (Dataset): The test dataset containing text and labels.
+    ---------------------------------------------------------------------------
+    ARGUMENTS:
+    train_data : Dataset
+        The Hugging Face Dataset object containing training data.
+    valid_data : Dataset
+        The Hugging Face Dataset object containing validation data.
+    test_data : Dataset
+        The Hugging Face Dataset object containing test data.
+    model_name : str
+        The name or path of the pretrained model whose tokenizer will be used.
+    chunk_size : int, optional (default=512)
+        The maximum sequence length for each chunk.
+    stride : int, optional (default=128)
+        The number of overlapping tokens between consecutive chunks.
 
-    Returns:
-    tuple: A tuple (train_data_tk, valid_data_tk, test_data_tk) where each element is:
-        - A tokenized and PyTorch-formatted dataset with columns "input_ids", "attention_mask", and "label".
-"""
+    ---------------------------------------------------------------------------
+    OUTPUT:
+    train_data_tk : Dataset
+        Tokenized, chunked, and formatted training dataset.
+    valid_data_tk : Dataset
+        Tokenized, chunked, and formatted validation dataset.
+    test_data_tk : Dataset
+        Tokenized, chunked, and formatted test dataset.
+
+    ---------------------------------------------------------------------------
+    Copyright (C) - 2025 - Samuel Davenport
+    ---------------------------------------------------------------------------
+    """
     tokenizer = AutoTokenizer.from_pretrained(model_name)
 
     def tokenize(batch):
@@ -247,21 +339,35 @@ def tokenize_data_chunks(train_data, valid_data, test_data, model_name, chunk_si
 
 def chunked_tokenize_function(example, tokenizer, chunk_size=512, stride=128):
     """
-    Tokenizes input text into overlapping chunks, aligning labels with the resulting tokenized segments.
+    Tokenize input text into overlapping chunks with aligned labels.
 
-    Parameters:
-        example (dict): A dictionary containing at least two keys:
-                        - "text" (str): The input text to be tokenized.
-                        - "label" (list): A list of labels corresponding to the text samples.
-        tokenizer (transformers.PreTrainedTokenizer): The tokenizer to use for tokenizing the text.
-        chunk_size (int, optional): The maximum length of each chunk (in tokens). Defaults to 512.
-        stride (int, optional): The number of tokens to overlap between consecutive chunks. Defaults to 128.
+    This function tokenizes long input text into overlapping chunks using the 
+    specified tokenizer. It ensures that labels are aligned with the resulting 
+    tokenized segments by mapping them according to the overflow token mapping.
 
-    Returns:
-        dict: A dictionary of tokenized outputs, including input IDs, attention masks, offset mappings,
-              and the aligned "label" list for each chunk. The output will include all keys typically
-              returned by the tokenizer, with an added "label" key that maps the original labels to
-              the correct chunks.
+    ---------------------------------------------------------------------------
+    ARGUMENTS:
+    example : dict
+        A dictionary containing at least:
+        - "text" (str): The input text to tokenize.
+        - "label" (list): A list of labels corresponding to the text samples.
+    tokenizer : transformers.PreTrainedTokenizer
+        The tokenizer to use for tokenizing the text.
+    chunk_size : int, optional (default=512)
+        The maximum length of each chunk (in tokens).
+    stride : int, optional (default=128)
+        The number of tokens to overlap between consecutive chunks.
+
+    ---------------------------------------------------------------------------
+    OUTPUT:
+    tokenized : dict
+        A dictionary containing tokenized outputs, including input IDs, 
+        attention masks, offset mappings, and aligned "label" entries for each 
+        chunk.
+
+    ---------------------------------------------------------------------------
+    Copyright (C) - 2025 - Samuel Davenport
+    ---------------------------------------------------------------------------
     """
     tokenized = tokenizer(
         example["text"],
