@@ -157,6 +157,21 @@ def logreg_metrics(X, y, model, test_indices, doprint=0):
 
 
 def compute_metrics(eval_pred):
+    """
+    Computes evaluation metrics (accuracy, precision, recall, and F1 score) for a classification task.
+
+    Parameters:
+    eval_pred (tuple): A tuple containing two elements:
+        - predictions (np.ndarray): The raw prediction logits or probabilities output by the model.
+        - labels (np.ndarray): The true labels corresponding to the predictions.
+
+    Returns:
+    dict: A dictionary containing the computed evaluation metrics:
+        - "accuracy" (float): The overall accuracy of the predictions.
+        - "precision" (float): The macro-averaged precision across all classes.
+        - "recall" (float): The macro-averaged recall across all classes.
+        - "f1" (float): The macro-averaged F1 score across all classes.
+    """
     accuracy_metric = evaluate.load("accuracy")
     precision_metric = evaluate.load("precision")
     recall_metric = evaluate.load("recall")
