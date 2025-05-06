@@ -17,7 +17,8 @@ setup(
         'scipy',
         'transformers',
         'datasets',
-        'evaluate'
+        'evaluate',
+        'torch'
     ],
     version='0.0.2',
     license='MIT',
