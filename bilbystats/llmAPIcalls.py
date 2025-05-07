@@ -1,3 +1,7 @@
+"""
+Functions for performing API calls
+"""
+
 import openai
 import pandas as pd
 
