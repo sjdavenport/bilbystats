@@ -3,7 +3,7 @@ import pandas as pd
 
 def read_api_key(api_key_name="openai", key_dir="/Users/samd/Documents/Packages/othercode/api_keys/"):
     """
-    Read an API key from a specified file.
+    Read an API key from a specified file
 
     This function reads an API key from a text file located in the provided 
     directory. The file is expected to be named using the format 
