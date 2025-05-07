@@ -30,7 +30,7 @@ def openai_api(instructions, content, model_name="gpt-4o"):
     return output
 
 
-def translator(text, model_name="gpt-4o"):
+def translate(text, model_name="gpt-4o"):
     instructions = "You are an expert in translation of Chinese texts."
     content = "For the following text return its translation to English and just that: " + text
     translation = openai_api(instructions, content, model_name=model_name)
