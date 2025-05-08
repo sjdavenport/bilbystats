@@ -5,7 +5,21 @@ A collection of functions for studying sentiment
 """
 import torch
 from transformers import pipeline
+import bilbystats as bs
 
+def chatgpt_sentiment(content):
+    instructions = """You are a sentiment analysis expert for Chinese language text, specializing in analyzing sentences from news reports and government websites. 
+    Classify each input sentence based on the **sentiment the author intended to express**, not how a reader might react. 
+
+Return your answer in the following format:
+
+Label: <one of [negative, slightly negative, neutral, slightly positive, positive]>
+Explanation: <brief explanation (1–2 sentences) of why this label applies>
+
+Use contextual understanding, typical tone in Chinese official writing, and implicit cues. Be concise and precise."""
+
+    output = bs.openai_api(instructions, content)
+    return output
 
 def get_sentiment_score(text):
     """

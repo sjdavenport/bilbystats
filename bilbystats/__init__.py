@@ -4,3 +4,4 @@ from .sentiment import *
 from .test import *
 from .llmapicalls import *
 from .aux_functions import *
+from .text_analysis import *
