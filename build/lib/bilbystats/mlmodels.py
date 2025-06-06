@@ -1,31 +1,50 @@
 """
     ML models for classification
 """
+from typing import Dict, List, Tuple, Optional, Union
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+from sklearn.linear_model import LogisticRegression
 from datasets import Dataset
 import evaluate
 import numpy as np
+import pandas as pd
 
 
-def data_idx_split(idx, ratio=0.2, valratio=0.5, random_state=42):
+def data_idx_split(idx: List[int],
+                   ratio: float = 0.2,
+                   valratio: float = 0.5,
+                   random_state: int = 42) -> Dict[str, np.ndarray]:
     """
-    Splits a given list of indices into training, validation, and test sets.
+    Split indices into training, validation, and test sets.
 
-    The function first divides the indices into a training set and a temporary set (which will contain both validation and test data). Then, the temporary set is further split into validation and test sets.
+    This function splits a set of indices into training, validation, and test 
+    sets using specified ratios. First, it divides the indices into a training 
+    set and a temporary set (for validation and testing). Then it further splits 
+    the temporary set into validation and test sets.
 
-    Parameters:
-    -----------
-    - idx (list or array-like): A list or array of indices to be split.
-    - ratio (float, optional): The proportion of the data to be used for the temporary set (valid + test). Default is 0.2 (20% of the data).
-    - valratio (float, optional): The proportion of the temporary set to be used for the validation set. Default is 0.5 (50% of the temporary set).
-    - random_state: a means of initializing randomness
+    ---------------------------------------------------------------------------
+    ARGUMENTS:
+    idx : Union[pd.Index, np.ndarray, List[int]]
+        The indices to split (e.g., DataFrame indices).
+    ratio : float, optional (default=0.2)
+        The proportion of the total indices to allocate to the combined 
+        validation and test sets.
+    valratio : float, optional (default=0.5)
+        The proportion of the temporary (validation + test) set to allocate to 
+        the test set.
+    random_state : int, optional (default=42)
+        The random seed to ensure reproducibility of the splits.
 
-    Returns:
-    -----------
-    - tuple: A tuple containing three elements:
-      - train_indices: The indices for the training set.
-      - valid_indices: The indices for the validation set.
-      - test_indices: The indices for the test set.
+    ---------------------------------------------------------------------------
+    OUTPUT:
+    indices : Dict[str, np.ndarray]
+        A dictionary with keys 'train', 'valid', and 'test', each containing the 
+        corresponding index arrays.
+
+    ---------------------------------------------------------------------------
+    Copyright (C) - 2025 - Samuel Davenport
+    ---------------------------------------------------------------------------
     """
     # Step 1: Split into train and temporary (valid+test)
     train_indices, temp_indices = train_test_split(
@@ -37,43 +56,117 @@ def data_idx_split(idx, ratio=0.2, valratio=0.5, random_state=42):
         temp_indices, test_size=valratio, random_state=random_state
     )
 
-    return train_indices, valid_indices, test_indices
+    indices = {
+        'train': train_indices,
+        'valid': valid_indices,
+        'test': test_indices
+    }
+
+    return indices
 
 
-def train_val_test_split(df, covariate, target, ratio=0.3, valratio=0.5, random_state=42):
+def df2dict(df: pd.DataFrame,
+            covariate: str,
+            target: Optional[str] = None,
+            indices: Optional[Union[List[int], pd.Index]] = None) -> Dataset:
     """
-    Splits a DataFrame into training, validation, and test sets and formats them as Hugging Face Datasets.
+    Convert a pandas DataFrame into a Hugging Face DatasetDict format.
 
-    Parameters:
-    -----------
-    df (pd.DataFrame): Input DataFrame containing the data.
-    covariate (str): Name of the column to be used as the input text.
-    target (str): Name of the column to be used as the label.
-    ratio (float, optional): Proportion of the data to reserve for validation and test sets combined. Default is 0.2.
-    valratio (float, optional): Proportion of the reserved data (from `ratio`) to assign to the validation set.
-                                The remainder is assigned to the test set. Default is 0.5.
-    random_state (int, optional): Random seed for reproducibility. Default is 42.
+    This function extracts specified covariate and target columns from a DataFrame, optionally filtered by indices, 
+    and converts the result into a Hugging Face Dataset object.
 
-    Returns:
-    --------
-    tuple: A tuple containing three Hugging Face `Dataset` objects:
-        - train_data (Dataset): Training set.
-        - valid_data (Dataset): Validation set.
-        - test_data (Dataset): Test set.
-"""
-    # Split the indices of df into train, validation and test sets
-    train_indices, valid_indices, test_indices = data_idx_split(
-        df.index, ratio=ratio, valratio=valratio, random_state=random_state)
+    ---------------------------------------------------------------------------
+    ARGUMENTS:
+    df : pd.DataFrame
+        The input DataFrame containing the covariate and target columns.
+    covariate : str
+        The name of the column in the DataFrame representing the input texts.
+    target : Optional[str]
+        The name of the column in the DataFrame representing the target labels.
+    indices : Optional[Union[List[int], pd.Index]]
+        A list of indices specifying which rows of the DataFrame to include. 
+        If None, all rows are used.
+
+    ---------------------------------------------------------------------------
+    OUTPUT:
+    output : Dataset
+        A Hugging Face Dataset object containing 'text' and 'label' fields.
+    ---------------------------------------------------------------------------
+    AUTHORS: Samuel Davenport
+    ---------------------------------------------------------------------------
+    """
+    if indices is None:
+        indices = df.index
 
     # Get the corresponding data from the indices
-    train_texts = df.loc[train_indices, covariate].tolist()
-    train_labels = df.loc[train_indices, target].tolist()
+    texts = df.loc[indices, covariate].tolist()
 
-    valid_texts = df.loc[valid_indices, covariate].tolist()
-    valid_labels = df.loc[valid_indices, target].tolist()
+    if target is not None:
+        labels = df.loc[indices, target].tolist()
+        # Convert into Hugging Face dataset format
+        output = Dataset.from_dict(
+            {'text': texts, 'label': labels})
+    else:
+        output = Dataset.from_dict(
+            {'text': texts})
 
-    test_texts = df.loc[test_indices, covariate].tolist()
-    test_labels = df.loc[test_indices, target].tolist()
+    return output
+
+
+def train_val_test_split(df: pd.DataFrame,
+                         covariate: str,
+                         target: str,
+                         indices: Dict[str, np.ndarray],
+                         ratio: float = 0.3,
+                         valratio: float = 0.5) -> Tuple[Dataset, Dataset, Dataset]:
+    """
+    Split a DataFrame into train, validation, and test datasets.
+
+    This function splits the provided DataFrame into train, validation, and test 
+    sets based on indices and specified ratios. It extracts the covariate and 
+    target columns for each set and converts them into Hugging Face `Dataset` 
+    objects.
+
+    ---------------------------------------------------------------------------
+    ARGUMENTS:
+    df : pd.DataFrame
+        The DataFrame containing the data to split.
+    covariate : str
+        The name of the column to be used as the input feature (e.g., text).
+    target : str
+        The name of the column to be used as the label.
+    indices : Dict[str, np.ndarray]
+        A dictionary with keys 'train', 'valid', and 'test' containing index 
+        lists for each split.
+    ratio : float, optional (default=0.3)
+        The proportion of the dataset to allocate to the test and validation 
+        sets combined.
+    valratio : float, optional (default=0.5)
+        The proportion of the non-training set to allocate to the validation 
+        set (the rest is test data).
+
+    ---------------------------------------------------------------------------
+    OUTPUT:
+    train_data : Dataset
+        A Hugging Face Dataset object containing the training data.
+    valid_data : Dataset
+        A Hugging Face Dataset object containing the validation data.
+    test_data : Dataset
+        A Hugging Face Dataset object containing the test data.
+
+    ---------------------------------------------------------------------------
+    Copyright (C) - 2025 - Samuel Davenport
+    ---------------------------------------------------------------------------
+    """
+    # Get the corresponding data from the indices
+    train_texts = df.loc[indices['train'], covariate].tolist()
+    train_labels = df.loc[indices['train'], target].tolist()
+
+    valid_texts = df.loc[indices['valid'], covariate].tolist()
+    valid_labels = df.loc[indices['valid'], target].tolist()
+
+    test_texts = df.loc[indices['test'], covariate].tolist()
+    test_labels = df.loc[indices['test'], target].tolist()
 
     # Convert into Hugging Face dataset format
     train_data = Dataset.from_dict(
@@ -85,7 +178,9 @@ def train_val_test_split(df, covariate, target, ratio=0.3, valratio=0.5, random_
     return train_data, valid_data, test_data
 
 
-def logreg_fit(X, y, train_idx):
+def logreg_fit(X: np.ndarray,
+               y: np.ndarray,
+               train_idx: np.ndarray) -> LogisticRegression:
     """
     Fit a Logistic Regression model on a subset of data.
 
@@ -93,19 +188,23 @@ def logreg_fit(X, y, train_idx):
     input data, where the subset is defined by the indices provided in 
     `train_idx`. It returns the trained model.
 
-    Parameters:
-    -----------
-    X : array-like, shape (n_samples, n_features)
+    ---------------------------------------------------------------------------
+    ARGUMENTS:
+    X : np.ndarray, shape (n_samples, n_features)
         Feature matrix for training the model.
-    y : array-like, shape (n_samples,)
+    y : np.ndarray, shape (n_samples,)
         Target labels corresponding to the feature matrix X.
-    train_idx : array-like, shape (n_samples_subset,)
-        Indices used to restrict the input data (X and y) for training.
+    train_idx : np.ndarray, shape (n_samples_subset,)
+         Indices used to restrict the input data (X and y) for training.
 
-    Returns:
-    --------
+    ---------------------------------------------------------------------------
+    OUTPUT:
     model : LogisticRegression
-        A trained Logistic Regression model fitted on the restricted data.
+         A trained Logistic Regression model fitted on the restricted data.
+
+    ---------------------------------------------------------------------------
+    Copyright (C) - 2025 - Samuel Davenport
+    ---------------------------------------------------------------------------
     """
     X_restricted = X[train_idx]
     y_restricted = y[train_idx]
@@ -117,30 +216,40 @@ def logreg_fit(X, y, train_idx):
     return model
 
 
-def logreg_metrics(X, y, model, test_indices, doprint=0):
+def logreg_metrics(X: np.ndarray,
+                   y: np.ndarray,
+                   model: LogisticRegression,
+                   test_indices: np.ndarray,
+                   doprint: int = 0) -> float:
     """
-    Evaluate and print metrics for a Logistic Regression model.
+    Compute and optionally display the accuracy of a Logistic Regression model.
 
-    This function evaluates the performance of a Logistic Regression model on 
-    the test data by calculating accuracy and generating a classification report. 
-    Optionally, it can print these metrics to the console.
+    This function evaluates the performance of a given Logistic Regression model 
+    on a test subset of the data, specified by `test_indices`. It computes the 
+    accuracy score and, if requested, prints both the accuracy and a detailed 
+    classification report.
 
-    Parameters:
-    -----------
-    X : array-like, shape (n_samples, n_features)
-        Feature matrix for the test set.
-    y : array-like, shape (n_samples,)
-        True labels for the test set.
+    ---------------------------------------------------------------------------
+    ARGUMENTS:
+    X : np.ndarray, shape (n_samples, n_features)
+        Feature matrix containing the input data.
+    y : np.ndarray, shape (n_samples,)
+        Target labels corresponding to the feature matrix X.
     model : LogisticRegression
-        A trained Logistic Regression model used to make predictions.
-    test_indices: the indices on which to test the model
-    doprint : int, optional, default=0
-        If set to 1, the accuracy and classification report will be printed.
+        A trained Logistic Regression model that implements the `predict` method.
+    test_indices : np.ndarray, shape (n_samples_subset,)
+        Indices specifying which samples to use as the test set.
+    doprint : int, optional (default=0)
+        If set to 1, prints the accuracy and the classification report.
 
-    Returns:
-    --------
+    ---------------------------------------------------------------------------
+    OUTPUT:
     accuracy : float
-        The accuracy of the model on the test set.
+        The accuracy of the model on the test subset.
+
+    ---------------------------------------------------------------------------
+    Copyright (C) - 2025 - Samuel Davenport
+    ---------------------------------------------------------------------------
     """
     X_test = X[test_indices]
     y_test = y[test_indices]
@@ -151,12 +260,40 @@ def logreg_metrics(X, y, model, test_indices, doprint=0):
     # Print accuracy and classification report if doprint is 1
     if doprint == 1:
         print("Accuracy:", accuracy)
+        from sklearn.metrics import classification_report
         print(classification_report(y_test, y_pred))
 
     return accuracy
 
 
-def compute_metrics(eval_pred):
+def compute_metrics(eval_pred: Tuple[np.ndarray, np.ndarray]) -> Dict[str, float]:
+    """
+    Compute evaluation metrics for model predictions.
+
+    This function calculates accuracy, precision, recall, and F1-score for the 
+    provided predictions and labels. The metrics are computed using a macro-average 
+    to account for class imbalance across multiple classes.
+
+    ---------------------------------------------------------------------------
+    ARGUMENTS:
+    eval_pred : Tuple[np.ndarray, np.ndarray]
+        A tuple containing two elements:
+        - predictions (np.ndarray): The raw prediction scores or logits output by the model.
+        - labels (np.ndarray): The true labels corresponding to the predictions.
+
+    ---------------------------------------------------------------------------
+    OUTPUT:
+    metrics : Dict[str, float]
+        A dictionary containing the computed metrics:
+        - 'accuracy' (float): The overall accuracy of the predictions.
+        - 'precision' (float): The macro-averaged precision score.
+        - 'recall' (float): The macro-averaged recall score.
+        - 'f1' (float): The macro-averaged F1 score.
+
+    ---------------------------------------------------------------------------
+    Copyright (C) - 2025 - Samuel Davenport
+    ---------------------------------------------------------------------------
+    """
     accuracy_metric = evaluate.load("accuracy")
     precision_metric = evaluate.load("precision")
     recall_metric = evaluate.load("recall")

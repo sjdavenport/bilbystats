@@ -1,2 +1,10 @@
+.env
+bilbystats/defaults/apikeys.env
+bilbystats/defaults/local_defaults.env
+bilbystats/data/example_21_sentences_labelled.parquet
+build/
+dist/
 bilbystats.egg-info/
-
+.ipynb_checkpoints/
+__pycache__/
+tmp_trainer/
